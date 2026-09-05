@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title id="page-browser-title">Absensi HUT AKP2I ke-11</title>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script>
+    tailwind.config = {
+      theme: { extend: { colors: { akp2i: { DEFAULT: '#00923f', dark: '#007532', light: '#e6f4ed' } }, fontFamily: { sans: ['Plus Jakarta Sans', 'sans-serif'] } } }
+    }
+  </script>
+</head>
+<body class="bg-gray-50 text-gray-800 antialiased">
+  <div class="flex flex-col md:flex-row h-screen overflow-hidden">
+    
+    <!-- MOBILE HEADER -->
+    <header class="md:hidden bg-white border-b border-gray-200 h-16 flex items-center justify-between px-4 z-20 flex-shrink-0">
+      <div class="flex items-center space-x-2 truncate">
+        <img id="mobile-logo" src="https://cdn-icons-png.flaticon.com/512/2921/2921222.png" class="w-7 h-7 object-contain" alt="Logo">
+        <span id="mobile-title" class="font-bold text-sm text-gray-900 truncate">HUT AKP2I ke-11</span>
+      </div>
+      <button onclick="toggleMobileMenu()" class="text-gray-600 hover:text-akp2i focus:outline-none p-2">
+        <i class="fa-solid fa-bars text-xl"></i>
+      </button>
+    </header>
+
+    <!-- SIDEBAR -->
+    <aside id="sidebar" class="bg-white border-r border-gray-200 w-64 flex-shrink-0 hidden md:flex flex-col fixed md:static inset-y-0 left-0 z-30 transition-all duration-300 shadow-lg md:shadow-none">
+      <div class="h-16 flex items-center px-6 border-b border-gray-100 space-x-3">
+        <img id="sidebar-logo" src="https://cdn-icons-png.flaticon.com/512/2921/2921222.png" class="w-8 h-8 object-contain" alt="Logo">
+        <span id="sidebar-title" class="font-bold text-base text-gray-900 truncate">HUT AKP2I ke-11</span>
+      </div>
+      <nav class="p-4 space-y-1.5 flex-1 overflow-y-auto">
+        <a href="#" onclick="switchTab('dashboard')" id="nav-dashboard" class="flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-medium bg-akp2i text-white"><i class="fa-solid fa-chart-pie w-5"></i><span>Daftar Hadir</span></a>
+        <a href="#" onclick="switchTab('scanner')" id="nav-scanner" class="flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50"><i class="fa-solid fa-qrcode w-5"></i><span>Scan QR Code</span></a>
+        <a href="#" onclick="switchTab('generator')" id="nav-generator" class="flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50"><i class="fa-solid fa-id-card w-5"></i><span>Data Peserta & QR</span></a>
+        <a href="#" onclick="switchTab('settings')" id="nav-settings" class="flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50"><i class="fa-solid fa-gear w-5"></i><span>Setting Web</span></a>
+      </nav>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <div class="flex-1 flex flex-col overflow-hidden">
+      <header class="hidden md:flex h-16 bg-white border-b border-gray-200 items-center justify-between px-6 flex-shrink-0">
+        <h1 id="page-title" class="text-lg font-bold text-gray-800">Daftar Hadir Peserta</h1>
+        <span class="px-3 py-1 rounded-full text-xs font-medium bg-akp2i-light text-akp2i">Live Cloud/GAS</span>
+      </header>
+      
+      <main class="flex-1 overflow-y-auto p-4 md:p-6 bg-gray-50">
+        
+        <!-- TOAST NOTIFICATION POPUP -->
+        <div id="toast-notification" class="hidden fixed top-5 right-5 z-50 px-5 py-3 rounded-xl shadow-xl text-white text-sm font-semibold transition-all transform duration-300 flex items-center space-x-3">
+          <i id="toast-icon" class="fa-solid fa-circle-check text-lg"></i>
+          <span id="toast-message">Pesan sukses...</span>
+        </div>
+
+        <!-- TAB 1: DAFTAR HADIR -->
+        <section id="tab-dashboard" class="space-y-6">
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div class="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm"><p class="text-xs text-gray-500 font-medium">Total Terdaftar</p><h3 id="stat-total-peserta" class="text-xl font-bold text-gray-800 mt-1">0</h3></div>
+            <div class="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm"><p class="text-xs text-gray-500 font-medium">Total Hadir (Scan)</p><h3 id="stat-hadir" class="text-xl font-bold text-akp2i mt-1">0</h3></div>
+            <div class="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm"><p class="text-xs text-gray-500 font-medium">Belum Hadir</p><h3 id="stat-belum" class="text-xl font-bold text-amber-600 mt-1">0</h3></div>
+          </div>
+          <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden p-4 md:p-5">
+            <div class="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3 mb-4">
+              <input type="text" id="searchHadirInput" onkeyup="filterHadirTable()" placeholder="Cari data daftar hadir..." class="px-4 py-2 border rounded-xl text-sm w-full sm:w-72">
+              <button onclick="loadAppData()" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium rounded-xl"><i class="fa-solid fa-rotate mr-2"></i> Refresh</button>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="w-full text-left border-collapse min-w-[700px]">
+                <thead>
+                  <tr class="bg-gray-50 text-gray-500 text-xs uppercase font-semibold border-b">
+                    <th class="py-3 px-4">Nama</th><th class="py-3 px-4">No Anggota</th><th class="py-3 px-4">Jenis</th><th class="py-3 px-4">Sertifikasi</th><th class="py-3 px-4">Cabang</th><th class="py-3 px-4">Pembayaran</th><th class="py-3 px-4">Waktu Scan</th><th class="py-3 px-4 text-center">Aksi</th>
+                  </tr>
+                </thead>
+                <tbody id="table-hadir-body" class="divide-y text-sm"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- TAB 2: SCANNER & RIWAYAT -->
+        <section id="tab-scanner" class="hidden space-y-6">
+          <div class="bg-white rounded-2xl border p-4 md:p-6 shadow-sm">
+            <h3 class="text-base md:text-lg font-bold mb-1">Pemindai QR Code Kehadiran</h3>
+            <p class="text-xs md:text-sm text-gray-500 mb-6">Arahkan kamera ke QR Code peserta untuk mencatat kehadiran secara instan.</p>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+              <!-- Kolom Kamera (Akan otomatis disembunyikan saat sukses scan) -->
+              <div id="camera-box-container" class="bg-gray-900 rounded-2xl overflow-hidden border p-2 flex flex-col items-center">
+                <div id="reader" class="w-full rounded-xl overflow-hidden"></div>
+              </div>
+
+              <!-- Kolom Detail Hasil Scan -->
+              <div class="bg-gray-50 border border-gray-200 rounded-2xl p-5 flex flex-col justify-between h-full min-h-[300px]">
+                <div>
+                  <div class="flex items-center justify-between mb-4 border-b pb-3">
+                    <span class="text-xs font-bold uppercase tracking-wider text-gray-500">Hasil Pemindaian Terakhir</span>
+                    <span id="scan-badge-status" class="px-3 py-1 rounded-full text-xs font-bold bg-gray-200 text-gray-700">Menunggu Scan...</span>
+                  </div>
+                  
+                  <div id="scan-placeholder" class="text-center py-10 text-gray-400">
+                    <i class="fa-solid fa-qrcode text-4xl mb-3"></i>
+                    <p class="text-sm">Belum ada QR Code yang dipindai.</p>
+                  </div>
+
+                  <div id="scan-detail-content" class="hidden space-y-3">
+                    <div>
+                      <span class="text-xs text-gray-400 uppercase font-semibold">Nama Lengkap</span>
+                      <h4 id="res-nama" class="font-bold text-gray-900 text-lg">---</h4>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3 text-xs md:text-sm">
+                      <div><span class="text-gray-400 block uppercase">No. Anggota</span><strong id="res-no" class="text-gray-700">---</strong></div>
+                      <div><span class="text-gray-400 block uppercase">Jenis / Sertifikasi</span><strong id="res-jenis" class="text-gray-700">---</strong></div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3 text-xs md:text-sm">
+                      <div><span class="text-gray-400 block uppercase">Cabang</span><strong id="res-cabang" class="text-gray-700">---</strong></div>
+                      <div><span class="text-gray-400 block uppercase">Pembayaran</span><strong id="res-ket" class="text-sm">---</strong></div>
+                    </div>
+                    <div class="pt-2 border-t text-xs md:text-sm">
+                      <span class="text-gray-400 block uppercase">Waktu Scan Masuk</span>
+                      <strong id="res-waktu" class="text-akp2i">---</strong>
+                    </div>
+                  </div>
+                </div>
+
+                <button onclick="resetScanner()" class="mt-6 w-full py-3 bg-akp2i hover:bg-akp2i-dark text-white rounded-xl text-sm font-semibold transition-colors shadow-sm">
+                  <i class="fa-solid fa-camera mr-2"></i> Scan Peserta Berikutnya
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Riwayat List Berhasil Scan -->
+          <div class="bg-white rounded-2xl border p-4 md:p-6 shadow-sm">
+            <h4 class="font-bold text-base text-gray-800 mb-4"><i class="fa-solid fa-list-check mr-2 text-akp2i"></i>Riwayat Daftar Hadir Sesi Ini</h4>
+            <div class="overflow-x-auto">
+              <table class="w-full text-left border-collapse min-w-[650px]">
+                <thead>
+                  <tr class="bg-gray-50 text-gray-500 text-xs uppercase font-semibold border-b">
+                    <th class="py-2.5 px-3">Nama</th><th class="py-2.5 px-3">No Anggota</th><th class="py-2.5 px-3">Cabang</th><th class="py-2.5 px-3">Status Bayar</th><th class="py-2.5 px-3">Waktu Masuk</th>
+                  </tr>
+                </thead>
+                <tbody id="live-scan-list" class="divide-y text-sm">
+                  <tr><td colspan="5" class="py-4 text-center text-gray-400 text-xs">Belum ada data discan.</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- TAB 3: DATA PESERTA & GENERATOR QR -->
+        <section id="tab-generator" class="hidden space-y-6">
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+            <div class="bg-white rounded-2xl border p-5 md:p-6 shadow-sm">
+              <h3 class="text-base md:text-lg font-bold mb-1">Pendaftaran & Generator QR Peserta</h3>
+              <p class="text-xs md:text-sm text-gray-500 mb-4">Tambah data master peserta baru ke database.</p>
+              
+              <form id="addForm" onsubmit="handleFormSubmit(event)" class="space-y-4 text-sm">
+                <div>
+                  <label class="block text-xs font-semibold uppercase text-gray-600 mb-1">Nama Lengkap</label>
+                  <input type="text" id="add-nama" placeholder="Nama Lengkap" required class="w-full px-4 py-2 border rounded-xl focus:outline-none focus:border-akp2i">
+                </div>
+                <div>
+                  <label class="block text-xs font-semibold uppercase text-gray-600 mb-1">Nomor Anggota</label>
+                  <input type="text" id="add-no" placeholder="Nomor Anggota" required class="w-full px-4 py-2 border rounded-xl focus:outline-none focus:border-akp2i">
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label class="block text-xs font-semibold uppercase text-gray-600 mb-1">Jenis Anggota</label>
+                    <select id="add-jenis" onchange="toggleSertifikasiInput()" class="w-full px-4 py-2 border rounded-xl bg-white focus:outline-none focus:border-akp2i">
+                      <option value="Utama">Utama</option>
+                      <option value="Madya">Madya</option>
+                      <option value="Pratama">Pratama</option>
+                      <option value="Kehormatan">Kehormatan</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label class="block text-xs font-semibold uppercase text-gray-600 mb-1">Pembayaran</label>
+                    <select id="add-ket" class="w-full px-4 py-2 border rounded-xl bg-white focus:outline-none focus:border-akp2i">
+                      <option value="Lunas">Lunas</option>
+                      <option value="Belum Lunas">Belum Lunas</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div id="sertifikasi-container" class="p-3 bg-gray-50 border rounded-xl space-y-2">
+                  <label class="block text-xs font-semibold uppercase text-gray-600">Pilihan Sertifikasi (Anggota Utama)</label>
+                  <div class="flex items-center space-x-6">
+                    <label class="flex items-center space-x-2 cursor-pointer text-xs font-medium"><input type="radio" name="sertifikasi" value="A" checked> <span>Sertifikasi A</span></label>
+                    <label class="flex items-center space-x-2 cursor-pointer text-xs font-medium"><input type="radio" name="sertifikasi" value="B"> <span>Sertifikasi B</span></label>
+                    <label class="flex items-center space-x-2 cursor-pointer text-xs font-medium"><input type="radio" name="sertifikasi" value="C"> <span>Sertifikasi C</span></label>
+                  </div>
+                </div>
+
+                <div>
+                  <label class="block text-xs font-semibold uppercase text-gray-600 mb-1">Cabang</label>
+                  <input type="text" id="add-cabang" placeholder="Cabang / Wilayah" required class="w-full px-4 py-2 border rounded-xl focus:outline-none focus:border-akp2i">
+                </div>
+
+                <button type="submit" class="w-full py-3 bg-akp2i hover:bg-akp2i-dark text-white rounded-xl font-semibold transition-colors shadow-sm">Simpan & Generate QR</button>
+              </form>
+            </div>
+
+            <!-- Pratinjau QR & Tabel Master Peserta -->
+            <div class="bg-white rounded-2xl border p-5 md:p-6 shadow-sm flex flex-col justify-between">
+              <div>
+                <h3 class="text-base md:text-lg font-bold mb-1">Pratinjau QR Code Peserta</h3>
+                <p class="text-xs md:text-sm text-gray-500 mb-4">Informasi dan QR code dari data yang baru didaftarkan.</p>
+                
+                <div id="qr-output-placeholder" class="text-center py-12 text-gray-400 border border-dashed rounded-xl p-6">
+                  <i class="fa-solid fa-id-card text-3xl mb-2"></i>
+                  <p class="text-xs">Isi form dan simpan untuk menampilkan QR Code peserta.</p>
+                </div>
+
+                <div id="qr-output-box" class="hidden text-center space-y-3 p-4 bg-akp2i-light/50 border border-akp2i/30 rounded-xl">
+                  <div id="qrcode" class="flex justify-center my-2"></div>
+                  <h4 id="prev-nama" class="font-bold text-gray-900 text-base">---</h4>
+                  <p class="text-xs text-gray-600">ID: <span id="out-id" class="font-mono font-bold">---</span> | No: <span id="prev-no">---</span></p>
+                  <p class="text-xs text-gray-600">Cabang: <span id="prev-cabang">---</span> | Sertifikasi: <span id="prev-sert">---</span></p>
+                  <button type="button" onclick="downloadCurrentQR()" class="mt-2 px-4 py-1.5 bg-akp2i text-white text-xs font-semibold rounded-lg shadow"><i class="fa-solid fa-download mr-1"></i> Download Gambar QR</button>
+                </div>
+              </div>
+
+              <!-- Tabel Master Peserta -->
+              <div class="mt-6 pt-4 border-t">
+                <div class="flex justify-between items-center mb-2">
+                  <span class="text-xs font-bold uppercase text-gray-500">Master Data Peserta</span>
+                  <input type="text" id="searchPesertaInput" onkeyup="filterPesertaTable()" placeholder="Cari..." class="px-3 py-1 border rounded-lg text-xs w-36">
+                </div>
+                <div class="overflow-x-auto max-h-48">
+                  <table class="w-full text-left border-collapse text-xs">
+                    <thead>
+                      <tr class="bg-gray-50 text-gray-500 border-b">
+                        <th class="py-2 px-2">Nama</th><th class="py-2 px-2">No Anggota</th><th class="py-2 px-2 text-center">Unduh QR</th><th class="py-2 px-2 text-center">Aksi</th>
+                      </tr>
+                    </thead>
+                    <tbody id="table-peserta-body" class="divide-y"></tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- TAB 4: SETTING WEB -->
+        <section id="tab-settings" class="hidden space-y-6">
+          <div class="max-w-xl mx-auto bg-white rounded-2xl border p-5 md:p-6 shadow-sm">
+            <h3 class="text-base md:text-lg font-bold mb-2">Pengaturan Tampilan Web</h3>
+            <p class="text-xs md:text-sm text-gray-500 mb-6">Ubah nama web dan logo aplikasi sesuai kebutuhan instansi.</p>
+            <form id="settingsForm" onsubmit="handleSettingsSubmit(event)" class="space-y-4 text-sm">
+              <div>
+                <label class="block text-xs font-semibold uppercase text-gray-600 mb-1">Nama Web / Judul Acara</label>
+                <input type="text" id="setting-nama" required class="w-full px-4 py-2 border rounded-xl focus:outline-none focus:border-akp2i">
+              </div>
+              <div>
+                <label class="block text-xs font-semibold uppercase text-gray-600 mb-1">URL Logo Web (Link Gambar)</label>
+                <input type="url" id="setting-logo" required class="w-full px-4 py-2 border rounded-xl focus:outline-none focus:border-akp2i">
+              </div>
+              <button type="submit" class="w-full py-3 bg-akp2i hover:bg-akp2i-dark text-white rounded-xl font-semibold transition-colors">Simpan Pengaturan</button>
+            </form>
+          </div>
+        </section>
+
+      </main>
+    </div>
+  </div>
+
+  <!-- MODAL EDIT DATA -->
+  <div id="editModal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl text-sm">
+      <h3 class="text-base font-bold text-gray-800 mb-4">Edit Data Peserta</h3>
+      <form id="editForm" onsubmit="handleEditSubmit(event)" class="space-y-3">
+        <input type="hidden" id="edit-rowid">
+        <input type="text" id="edit-nama" placeholder="Nama Lengkap" required class="w-full px-4 py-2 border rounded-xl">
+        <input type="text" id="edit-no" placeholder="Nomor Anggota" required class="w-full px-4 py-2 border rounded-xl">
+        <select id="edit-jenis" onchange="toggleEditSertifikasi()" class="w-full px-4 py-2 border rounded-xl bg-white">
+          <option value="Utama">Utama</option><option value="Madya">Madya</option><option value="Pratama">Pratama</option><option value="Kehormatan">Kehormatan</option>
+        </select>
+        <div id="edit-sertifikasi-container" class="p-3 bg-gray-50 border rounded-xl space-y-2">
+          <label class="block text-xs font-semibold uppercase text-gray-600">Pilihan Sertifikasi</label>
+          <div class="flex items-center space-x-6">
+            <label class="flex items-center space-x-2 text-xs"><input type="radio" name="edit-sertifikasi" value="A"> <span>A</span></label>
+            <label class="flex items-center space-x-2 text-xs"><input type="radio" name="edit-sertifikasi" value="B"> <span>B</span></label>
+            <label class="flex items-center space-x-2 text-xs"><input type="radio" name="edit-sertifikasi" value="C"> <span>C</span></label>
+          </div>
+        </div>
+        <input type="text" id="edit-cabang" placeholder="Cabang" required class="w-full px-4 py-2 border rounded-xl">
+        <select id="edit-ket" class="w-full px-4 py-2 border rounded-xl bg-white">
+          <option value="Lunas">Lunas</option><option value="Belum Lunas">Belum Lunas</option>
+        </select>
+        <div class="flex space-x-3 pt-2">
+          <button type="button" onclick="closeEditModal()" class="flex-1 py-2 bg-gray-100 rounded-xl">Batal</button>
+          <button type="submit" class="flex-1 py-2 bg-akp2i text-white rounded-xl">Simpan</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- HIDDEN CONTAINER FOR QR DOWNLOAD -->
+  <div id="hidden-qrcode" class="hidden"></div>
+
+  <script>
+    const API_URL = "https://script.google.com/macros/s/AKfycby0Cp_xFHBlyi_h3DlQ_CQqLRIM7Pdc8l5E5iXeX5MgcpgNz4-LXc38fQaZPSQ4EkmvbA/exec";
+
+    let allPeserta = [];
+    let allHadir = [];
+    let html5QrCode = null;
+    let currentGeneratedId = "";
+
+    function showToast(message, isSuccess = true) {
+      const toast = document.getElementById('toast-notification');
+      const toastMsg = document.getElementById('toast-message');
+      const toastIcon = document.getElementById('toast-icon');
+
+      toastMsg.innerText = message;
+      toast.className = `fixed top-5 right-5 z-50 px-5 py-3 rounded-xl shadow-xl text-white text-sm font-semibold transition-all transform duration-300 flex items-center space-x-3 ${isSuccess ? 'bg-akp2i' : 'bg-red-600'}`;
+      toastIcon.className = isSuccess ? 'fa-solid fa-circle-check text-lg' : 'fa-solid fa-circle-exclamation text-lg';
+      
+      toast.classList.remove('hidden');
+      setTimeout(() => {
+        toast.classList.add('hidden');
+      }, 3500);
+    }
+
+    function switchTab(tabId) {
+      ['dashboard', 'scanner', 'generator', 'settings'].forEach(id => {
+        document.getElementById('tab-' + id).classList.add('hidden');
+        document.getElementById('nav-' + id).className = "flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50";
+      });
+      document.getElementById('tab-' + tabId).classList.remove('hidden');
+      document.getElementById('nav-' + tabId).className = "flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-medium bg-akp2i text-white";
+      
+      const titles = { dashboard: 'Daftar Hadir Peserta', scanner: 'Pemindai QR Code Kehadiran', generator: 'Data Peserta & Generator QR', settings: 'Setting Tampilan Web' };
+      if(document.getElementById('page-title')) document.getElementById('page-title').innerText = titles[tabId];
+
+      document.getElementById('sidebar').classList.add('hidden');
+      document.getElementById('sidebar').classList.remove('absolute');
+
+      if(tabId === 'scanner') initScanner(); else stopScanner();
+    }
+
+    function toggleMobileMenu() {
+      const sb = document.getElementById('sidebar');
+      sb.classList.toggle('hidden');
+      sb.classList.toggle('absolute');
+    }
+
+    function toggleSertifikasiInput() {
+      const jenis = document.getElementById('add-jenis').value;
+      const container = document.getElementById('sertifikasi-container');
+      if (jenis === 'Utama') {
+        container.classList.remove('hidden');
+      } else {
+        container.classList.add('hidden');
+      }
+    }
+
+    function toggleEditSertifikasi() {
+      const jenis = document.getElementById('edit-jenis').value;
+      const container = document.getElementById('edit-sertifikasi-container');
+      if (jenis === 'Utama') {
+        container.classList.remove('hidden');
+      } else {
+        container.classList.add('hidden');
+      }
+    }
+
+    function loadAppData() {
+      fetch(API_URL + "?action=getData")
+        .then(res => res.json())
+        .then(res => {
+          if (res.settings) {
+            document.getElementById('sidebar-title').innerText = res.settings.namaWeb;
+            document.getElementById('mobile-title').innerText = res.settings.namaWeb;
+            document.getElementById('page-browser-title').innerText = res.settings.namaWeb;
+            document.getElementById('sidebar-logo').src = res.settings.logoWeb;
+            document.getElementById('mobile-logo').src = res.settings.logoWeb;
+            document.getElementById('setting-nama').value = res.settings.namaWeb;
+            document.getElementById('setting-logo').value = res.settings.logoWeb;
+          }
+          allPeserta = res.peserta || [];
+          allHadir = res.hadir || [];
+
+          document.getElementById('stat-total-peserta').innerText = allPeserta.length;
+          document.getElementById('stat-hadir').innerText = allHadir.length;
+          document.getElementById('stat-belum').innerText = Math.max(0, allPeserta.length - allHadir.length);
+
+          renderHadirTable(allHadir);
+          renderPesertaTable(allPeserta);
+          renderLiveScanList(allHadir);
+        });
+    }
+
+    function renderHadirTable(data) {
+      const tbody = document.getElementById('table-hadir-body');
+      tbody.innerHTML = '';
+      if(data.length === 0) { tbody.innerHTML = `<tr><td colspan="8" class="py-4 text-center text-gray-400">Belum ada daftar hadir.</td></tr>`; return; }
+      data.forEach(item => {
+        const ketColor = item.keterangan === 'Lunas' ? 'text-emerald-600' : 'text-red-600';
+        tbody.innerHTML += `
+          <tr class="hover:bg-gray-50">
+            <td class="py-3 px-4 font-medium">${item.nama}</td>
+            <td class="py-3 px-4">${item.noAnggota}</td>
+            <td class="py-3 px-4">${item.jenisAnggota}</td>
+            <td class="py-3 px-4 font-semibold text-akp2i">${item.sertifikasi}</td>
+            <td class="py-3 px-4">${item.cabang}</td>
+            <td class="py-3 px-4"><span class="font-bold text-xs ${ketColor}">${item.keterangan}</span></td>
+            <td class="py-3 px-4 text-xs text-gray-500">${item.waktuScan}</td>
+            <td class="py-3 px-4 text-center">
+              <button onclick="deleteData(${item.rowId}, 'hadir')" class="text-red-500 hover:text-red-700" title="Hapus dari daftar hadir"><i class="fa-solid fa-trash"></i></button>
+            </td>
+          </tr>`;
+      });
+    }
+
+    function renderPesertaTable(data) {
+      const tbody = document.getElementById('table-peserta-body');
+      tbody.innerHTML = '';
+      if(data.length === 0) { tbody.innerHTML = `<tr><td colspan="4" class="py-4 text-center text-gray-400">Belum ada peserta.</td></tr>`; return; }
+      data.forEach(item => {
+        tbody.innerHTML += `
+          <tr class="hover:bg-gray-50">
+            <td class="py-2 px-2 font-medium">${item.nama}</td>
+            <td class="py-2 px-2 text-gray-500">${item.noAnggota}</td>
+            <td class="py-2 px-2 text-center">
+              <button onclick="downloadSpecificQR('${item.id}', '${item.nama}')" class="px-2.5 py-1 bg-akp2i-light text-akp2i rounded-lg hover:bg-akp2i hover:text-white transition-colors" title="Unduh QR"><i class="fa-solid fa-qrcode"></i></button>
+            </td>
+            <td class="py-2 px-2 text-center space-x-1">
+              <button onclick="openEditModal(${item.rowId})" class="text-blue-500" title="Edit"><i class="fa-solid fa-pen"></i></button>
+              <button onclick="deleteData(${item.rowId}, 'peserta')" class="text-red-500" title="Hapus"><i class="fa-solid fa-trash"></i></button>
+            </td>
+          </tr>`;
+      });
+    }
+
+    function renderLiveScanList(data) {
+      const tbody = document.getElementById('live-scan-list');
+      tbody.innerHTML = '';
+      if(data.length === 0) { tbody.innerHTML = `<tr><td colspan="5" class="py-4 text-center text-gray-400 text-xs">Belum ada data discan.</td></tr>`; return; }
+      const recent = [...data].reverse().slice(0, 10);
+      recent.forEach(item => {
+        const ketColor = item.keterangan === 'Lunas' ? 'text-emerald-600' : 'text-red-600';
+        tbody.innerHTML += `
+          <tr class="hover:bg-gray-50">
+            <td class="py-2 px-3 font-medium">${item.nama}</td>
+            <td class="py-2 px-3">${item.noAnggota}</td>
+            <td class="py-2 px-3">${item.cabang}</td>
+            <td class="py-2 px-3"><span class="font-bold ${ketColor}">${item.keterangan}</span></td>
+            <td class="py-2 px-3 text-xs text-gray-500">${item.waktuScan}</td>
+          </tr>`;
+      });
+    }
+
+    function filterHadirTable() {
+      const keyword = document.getElementById('searchHadirInput').value.toLowerCase();
+      const filtered = allHadir.filter(item => item.nama.toLowerCase().includes(keyword) || item.noAnggota.toLowerCase().includes(keyword));
+      renderHadirTable(filtered);
+    }
+
+    function filterPesertaTable() {
+      const keyword = document.getElementById('searchPesertaInput').value.toLowerCase();
+      const filtered = allPeserta.filter(item => item.nama.toLowerCase().includes(keyword) || item.noAnggota.toLowerCase().includes(keyword));
+      renderPesertaTable(filtered);
+    }
+
+    function initScanner() {
+      // Pastikan kotak kamera ditampilkan kembali saat scanner diinisialisasi
+      document.getElementById('camera-box-container').classList.remove('hidden');
+      if (!html5QrCode) html5QrCode = new Html5Qrcode("reader");
+      if (!html5QrCode.isScanning) {
+        html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: 200 }, onScanSuccess, () => {}).catch(e => console.error("Kamera aktif error"));
+      }
+    }
+
+    function stopScanner() { 
+      if (html5QrCode && html5QrCode.isScanning) {
+        html5QrCode.stop().catch(err => console.log(err));
+      } 
+    }
+
+    function onScanSuccess(text) {
+      stopScanner();
+      // Sembunyikan kotak kamera agar tidak terlihat kosong / kotak hitam setelah scan berhasil
+      document.getElementById('camera-box-container').classList.add('hidden');
+
+      fetch(API_URL, { method: "POST", body: JSON.stringify({ action: "scan", qrText: text }) })
+        .then(res => res.json())
+        .then(res => {
+          if(res.success) {
+            showToast(res.message, true);
+            document.getElementById('scan-placeholder').classList.add('hidden');
+            document.getElementById('scan-detail-content').classList.remove('hidden');
+            
+            document.getElementById('res-nama').innerText = res.data.nama;
+            document.getElementById('res-no').innerText = res.data.noAnggota;
+            document.getElementById('res-jenis').innerText = res.data.jenisAnggota + (res.data.sertifikasi !== '-' ? ' ('+res.data.sertifikasi+')' : '');
+            document.getElementById('res-cabang').innerText = res.data.cabang;
+            document.getElementById('res-waktu').innerText = res.data.waktuScan;
+            
+            const badge = document.getElementById('scan-badge-status');
+            badge.innerText = "Hadir";
+            badge.className = "px-3 py-1 rounded-full text-xs font-bold bg-akp2i text-white";
+
+            const ketEl = document.getElementById('res-ket');
+            ketEl.innerText = res.data.keterangan;
+            if (res.data.keterangan === 'Lunas') {
+              ketEl.className = "font-bold text-sm text-emerald-600";
+            } else {
+              ketEl.className = "font-bold text-sm text-red-600";
+            }
+
+            loadAppData();
+          } else {
+            showToast(res.message, false);
+            resetScanner();
+          }
+        });
+    }
+
+    function resetScanner() {
+      document.getElementById('scan-detail-content').classList.add('hidden');
+      document.getElementById('scan-placeholder').classList.remove('hidden');
+      const badge = document.getElementById('scan-badge-status');
+      badge.innerText = "Menunggu Scan...";
+      badge.className = "px-3 py-1 rounded-full text-xs font-bold bg-gray-200 text-gray-700";
+      initScanner();
+    }
+
+    function handleFormSubmit(e) {
+      e.preventDefault();
+      const jenis = document.getElementById('add-jenis').value;
+      let sertifikasi = "-";
+      if (jenis === 'Utama') {
+        const selectedSertif = document.querySelector('input[name="sertifikasi"]:checked');
+        if (selectedSertif) sertifikasi = selectedSertif.value;
+      }
+
+      const formData = {
+        nama: document.getElementById('add-nama').value,
+        noAnggota: document.getElementById('add-no').value,
+        jenisAnggota: jenis,
+        sertifikasi: sertifikasi,
+        cabang: document.getElementById('add-cabang').value,
+        keterangan: document.getElementById('add-ket').value
+      };
+
+      fetch(API_URL, { method: "POST", body: JSON.stringify({ action: "add", formData: formData }) })
+        .then(res => res.json())
+        .then(res => {
+          showToast(res.message, true);
+          
+          // Reset form secara total setelah berhasil
+          document.getElementById('addForm').reset();
+          toggleSertifikasiInput();
+          
+          currentGeneratedId = res.id;
+          document.getElementById('qr-output-placeholder').classList.add('hidden');
+          document.getElementById('qr-output-box').classList.remove('hidden');
+          document.getElementById('out-id').innerText = res.id;
+          document.getElementById('prev-nama').innerText = res.peserta.nama;
+          document.getElementById('prev-no').innerText = res.peserta.noAnggota;
+          document.getElementById('prev-cabang').innerText = res.peserta.cabang;
+          document.getElementById('prev-sert').innerText = res.peserta.sertifikasi;
+
+          document.getElementById('qrcode').innerHTML = "";
+          new QRCode(document.getElementById("qrcode"), { text: res.id, width: 140, height: 140 });
+          
+          loadAppData();
+        });
+    }
+
+    function downloadCurrentQR() {
+      if(!currentGeneratedId) return;
+      const img = document.querySelector('#qrcode img') || document.querySelector('#qrcode canvas');
+      if(img) {
+        let imageUrl = img.src;
+        if(!imageUrl && img.tagName === 'CANVAS') imageUrl = img.toDataURL("image/png");
+        const a = document.createElement('a');
+        a.href = imageUrl;
+        a.download = `QR-${currentGeneratedId}.png`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      }
+    }
+
+    function downloadSpecificQR(id, nama) {
+      const container = document.getElementById('hidden-qrcode');
+      container.innerHTML = "";
+      new QRCode(container, { text: id, width: 250, height: 250 });
+      setTimeout(() => {
+        const img = container.querySelector('img') || container.querySelector('canvas');
+        if(img) {
+          let url = img.src;
+          if(!url && img.tagName === 'CANVAS') url = img.toDataURL("image/png");
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `QR-${nama.replace(/\s+/g, '_')}-${id}.png`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          showToast("QR Code berhasil diunduh!", true);
+        }
+      }, 200);
+    }
+
+    function handleSettingsSubmit(e) {
+      e.preventDefault();
+      const settings = {
+        namaWeb: document.getElementById('setting-nama').value,
+        logoWeb: document.getElementById('setting-logo').value
+      };
+      fetch(API_URL, { method: "POST", body: JSON.stringify({ action: "saveSettings", settings: settings }) })
+        .then(res => res.json())
+        .then(res => { showToast(res.message, true); loadAppData(); });
+    }
+
+    function openEditModal(rowId) {
+      const item = allPeserta.find(d => d.rowId === rowId);
+      if(!item) return;
+      document.getElementById('edit-rowid').value = item.rowId;
+      document.getElementById('edit-nama').value = item.nama;
+      document.getElementById('edit-no').value = item.noAnggota;
+      document.getElementById('edit-jenis').value = item.jenisAnggota;
+      document.getElementById('edit-cabang').value = item.cabang;
+      document.getElementById('edit-ket').value = item.keterangan;
+      
+      toggleEditSertifikasi();
+      if (item.jenisAnggota === 'Utama' && item.sertifikasi !== '-') {
+        const radio = document.querySelector(`input[name="edit-sertifikasi"][value="${item.sertifikasi}"]`);
+        if(radio) radio.checked = true;
+      }
+
+      document.getElementById('editModal').classList.remove('hidden');
+    }
+
+    function closeEditModal() { document.getElementById('editModal').classList.add('hidden'); }
+
+    function handleEditSubmit(e) {
+      e.preventDefault();
+      const jenis = document.getElementById('edit-jenis').value;
+      let sertifikasi = "-";
+      if (jenis === 'Utama') {
+        const sel = document.querySelector('input[name="edit-sertifikasi"]:checked');
+        if(sel) sertifikasi = sel.value;
+      }
+
+      const formData = {
+        rowId: document.getElementById('edit-rowid').value,
+        nama: document.getElementById('edit-nama').value,
+        noAnggota: document.getElementById('edit-no').value,
+        jenisAnggota: jenis,
+        sertifikasi: sertifikasi,
+        cabang: document.getElementById('edit-cabang').value,
+        keterangan: document.getElementById('edit-ket').value
+      };
+
+      fetch(API_URL, { method: "POST", body: JSON.stringify({ action: "update", formData: formData }) })
+        .then(res => res.json())
+        .then(res => { showToast(res.message, true); closeEditModal(); loadAppData(); });
+    }
+
+    function deleteData(rowId, type) {
+      const msg = type === 'hadir' ? "Hapus peserta ini dari daftar hadir?" : "Hapus peserta dari master data?";
+      if(confirm(msg)) {
+        fetch(API_URL, { method: "POST", body: JSON.stringify({ action: "delete", rowId: rowId, type: type }) })
+          .then(res => res.json())
+          .then(res => { showToast(res.message, true); loadAppData(); });
+      }
+    }
+
+    window.onload = loadAppData;
+  </script>
+</body>
+</html>
